@@ -8,7 +8,11 @@ fn main() {
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-        handle_connection(stream);
+        std::thread::spawn(|| {
+            println!("thread spawned");
+            handle_connection(stream);
+            println!("thread exited");
+        });
     }
 }
 
