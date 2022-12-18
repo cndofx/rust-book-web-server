@@ -3,12 +3,16 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
-
+    for stream in listener.incoming() {
+        let stream = stream.unwrap();
+        handle_connection(stream).await;
+    }
 }
 
-fn handle_connection(mut stream: TcpStream) {
+async fn handle_connection(mut stream: TcpStream) {
     let reader = BufReader::new(&mut stream);
     let request_line = reader.lines().next().unwrap().unwrap();
     println!("received request: {request_line}");
