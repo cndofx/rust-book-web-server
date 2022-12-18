@@ -4,13 +4,13 @@ use std::{
 };
 
 pub struct ThreadPool {
-    threads: Vec<Worker>,
+    workers: Vec<Worker>,
     sender: mpsc::Sender<Job>,
 }
 
 struct Worker {
     id: usize,
-    handle: thread::JoinHandle<()>,
+    handle: Option<thread::JoinHandle<()>>,
 }
 
 // struct Job;
@@ -25,12 +25,12 @@ impl ThreadPool {
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
 
-        let mut threads = Vec::with_capacity(num_threads);
+        let mut workers = Vec::with_capacity(num_threads);
         for id in 0..num_threads {
-            threads.push(Worker::new(id, receiver.clone()))
+            workers.push(Worker::new(id, receiver.clone()))
         }
 
-        Ok(ThreadPool { threads, sender })
+        Ok(ThreadPool { workers, sender })
     }
 
     pub fn execute<F: FnOnce() + Send + 'static>(&self, f: F) {
@@ -39,9 +39,20 @@ impl ThreadPool {
     }
 }
 
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        for worker in &mut self.workers {
+            println!("shutting down worker {}", worker.id);
+            if let Some(handle) = worker.handle.take() {
+                handle.join().expect("unable to join worker thread handle");
+            }
+        }
+    }
+}
+
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Self {
-        let handle = thread::spawn(move || loop {
+        let handle = Some(thread::spawn(move || loop {
             let job = receiver
                 .lock()
                 .expect("unable to lock job receiver")
@@ -50,7 +61,7 @@ impl Worker {
             println!("worker {id} got a job, executing...");
             job();
             println!("worker {id} finished job");
-        });
+        }));
         Worker { id, handle }
     }
 }
