@@ -21,7 +21,8 @@ async fn handle_connection(mut stream: TcpStream) {
         "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "../hello.html"),
         "GET /sleep HTTP/1.1" => {
             println!("sleeping...");
-            std::thread::sleep(std::time::Duration::from_secs(5));
+            // std::thread::sleep(std::time::Duration::from_secs(5));
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
             println!("done sleeping");
             ("HTTP/1.1 200 OK", "../hello.html")
         }
