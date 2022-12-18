@@ -7,14 +7,12 @@ use webserver::ThreadPool;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
-    let pool = ThreadPool::new(4);
+    let pool = ThreadPool::new(4).expect("unable to create thread pool");
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-        std::thread::spawn(|| {
-            println!("thread spawned");
+        pool.execute(|| {
             handle_connection(stream);
-            println!("thread exited");
         });
     }
 }
