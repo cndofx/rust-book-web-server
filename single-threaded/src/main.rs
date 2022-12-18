@@ -17,10 +17,15 @@ fn handle_connection(mut stream: TcpStream) {
     let request_line = reader.lines().next().unwrap().unwrap();
     println!("received request: {request_line}");
 
-    let (status_line, filename) = if request_line == "GET / HTTP/1.1" {
-        ("HTTP/1.1 200 OK", "../hello.html")
-    } else {
-        ("HTTP/1.1 404 NOT FOUND", "../404.html")
+    let (status_line, filename) = match request_line.as_str() {
+        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "../hello.html"),
+        "GET /sleep HTTP/1.1" => {
+            println!("sleeping...");
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            println!("done sleeping");
+            ("HTTP/1.1 200 OK", "../hello.html")
+        }
+        _ => ("HTTP/1.1 404 NOT FOUND", "../404.html"),
     };
     let contents = std::fs::read_to_string(filename).unwrap();
     let length = contents.len();
